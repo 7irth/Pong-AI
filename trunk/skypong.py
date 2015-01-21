@@ -1,11 +1,15 @@
 __author__ = 'Tirth'
 
+import math
+
 # globals to contain game history
-pad_y_vals, ball_x_vals, ball_y_vals, x_distances, y_distances = [], [], [], [], []
+pad_y_vals, ball_x_vals, ball_y_vals = [], [], []
+x_distances, y_distances, d_distances = [], [], []
+score = [0, 0]
 
 # dictionary representation of game state
 history = dict(paddle_y=pad_y_vals, ball_x=ball_x_vals, ball_y=ball_y_vals,
-               y_dist=y_distances, x_dist=x_distances)
+               y_dist=y_distances, x_dist=x_distances, d_dist=d_distances)
 
 def trim_history(hist, trim_size=50):
     if len(hist[hist.keys()[0]]) > trim_size:  # for efficiency
@@ -44,7 +48,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     """
 
     stock_ai = False
-    debug = True
+    debug = False
 
     # Ideas
     # - calculate where the ball will bounce off of the opponent's paddle?
@@ -54,6 +58,8 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # Issues/TODOs
     # - make sure collisions are using the right coordinates
     # - figure out how to get the final score for unit testing
+    # - determine the optimal history trim size (philosophical quandary notwithstanding)
+    # - replace constants with derived variables
 
     # friendlier names, variables
     pad_x_coord = paddle_frect.pos[0]
@@ -86,6 +92,26 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # figure out which side we're on
     right_side = (pad_x_centre == 420)  # blaze it
 
+    # calculate distances
+    x_dist = pad_x_centre - ball_x_centre
+    y_dist = pad_y_centre - ball_y_centre
+    d_dist = math.sqrt(x_dist ** 2 + y_dist ** 2)
+
+    # calculate collision surfaces, if necessary
+
+    # keep track of score
+    starting_pos = [table_x//2, table_y//2]
+
+    if len(history['ball_x']) is not 0:
+        last_ball_x = history['ball_x'][-1]
+
+        if [ball_x_centre, ball_y_centre] == starting_pos:
+            print "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOAL!"
+            if last_ball_x > table_x/2:  # ball was last on the right, so left scored
+                score[0] += 1
+            else:
+                score[1] += 1
+
     # rounding
     num_digits = 2
 
@@ -93,12 +119,23 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     pad_y_vals.append(pad_y_centre)
     ball_x_vals.append(round(ball_x_centre, num_digits))
     ball_y_vals.append(round(ball_y_centre, num_digits))
-    x_distances.append(round(pad_x_coord - ball_x_centre, num_digits))
-    y_distances.append(round(pad_y_centre - ball_y_centre, num_digits))
+    x_distances.append(round(x_dist, num_digits))
+    y_distances.append(round(y_dist, num_digits))
+    d_distances.append(round(d_dist, num_digits))
 
     trim_history(history, 30)
 
     if debug:
+        """Prints out debug info and metrics, currently:
+        table dimensions
+        current side
+        paddle (x, y)
+        ball (x, y)
+        normalized (x, y), basically a position in [0, 1], useful? I dunno
+        distance (x, y), from centre of ball to centre of paddle
+        history
+        """
+
         # general debug info
         print 'table dimensions: ' + str(table_x) + ' by ' + str(table_y)
 
@@ -118,13 +155,16 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
               ',   y: ' + str(round(ball_y_centre/table_y, num_digits))
 
         # distances (centre of paddle to centre of ball)
-        print 'distance   x: ' + str(round(pad_x_centre - ball_x_centre, num_digits)) + \
-              ', y: ' + str(round(pad_y_centre - ball_y_centre, num_digits))
+        print 'distance   x: ' + str(round(x_dist, num_digits)) + \
+              ', y: ' + str(round(y_dist, num_digits)) + ', d: ' + str(round(d_dist, num_digits))
 
         # total history
         for key in history:
             print key
             print history[key]
+
+        # score
+        print score
 
         print '-'
 
@@ -138,8 +178,12 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         # custom ai
         # if ball is moving away, return to middle,
         # otherwise standard behaviour
-        if right_side and history['x_dist'][-1] < history['x_dist'][-2] or \
-       not right_side and history['x_dist'][-1] > history['x_dist'][-2]:  # moving towards us
+
+        # runtime debugging
+        print score
+
+        if right_side and history['x_dist'][-1:] < history['x_dist'][-2:-1] or \
+       not right_side and history['x_dist'][-1:] > history['x_dist'][-2:-1]:  # moving towards us
             if pad_y_centre < ball_y_centre:
                 return "down"
             else:
