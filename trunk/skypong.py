@@ -49,9 +49,10 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # Ideas
     # - calculate where the ball will bounce off of the opponent's paddle?
     # - create ball and paddle classes?
+    # - track ball's velocity to predict where it will go; use game source?
 
     # Issues
-    # - stops working when the sides switch lol, how would we check for that?
+    # - make sure collisions are using the right coordinates
 
     # friendlier names, variables
     pad_x_coord = paddle_frect.pos[0]
@@ -81,6 +82,9 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     table_x = table_size[0]
     table_y = table_size[1]
 
+    # figure out which side we're on
+    right_side = (pad_x_centre == 420)  # blaze it
+
     # rounding
     num_digits = 2
 
@@ -96,6 +100,13 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     if debug:
         # general debug info
         print 'table dimensions: ' + str(table_x) + ' by ' + str(table_y)
+
+        print 'current side:',
+
+        if right_side:
+            print 'right'
+        else:
+            print 'left'
 
         print 'paddle     x: ' + str(pad_x_centre) + ',    y: ' + str(pad_y_centre)
 
@@ -126,7 +137,8 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         # custom ai
         # if ball is moving away, return to middle,
         # otherwise standard behaviour
-        if history['x_dist'][-1] < history['x_dist'][-2]:  # moving towards us
+        if right_side and history['x_dist'][-1] < history['x_dist'][-2] or \
+       not right_side and history['x_dist'][-1] > history['x_dist'][-2]:  # moving towards us
             if pad_y_centre < ball_y_centre:
                 return "down"
             else:
