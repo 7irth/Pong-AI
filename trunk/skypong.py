@@ -51,8 +51,9 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # - create ball and paddle classes?
     # - track ball's velocity to predict where it will go; use game source?
 
-    # Issues
+    # Issues/TODOs
     # - make sure collisions are using the right coordinates
+    # - figure out how to get the final score for unit testing
 
     # friendlier names, variables
     pad_x_coord = paddle_frect.pos[0]
