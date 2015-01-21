@@ -43,9 +43,15 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
  y   v
     """
 
+    stock_ai = False
+    debug = True
+
     # Ideas
     # - calculate where the ball will bounce off of the opponent's paddle?
     # - create ball and paddle classes?
+
+    # Issues
+    # - stops working when the sides switch lol, how would we check for that?
 
     # friendlier names, variables
     pad_x_coord = paddle_frect.pos[0]
@@ -87,31 +93,46 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
 
     trim_history(history, 30)
 
-    # general info
-    print 'table dimensions: ' + str(table_x) + ' by ' + str(table_y)
+    if debug:
+        # general debug info
+        print 'table dimensions: ' + str(table_x) + ' by ' + str(table_y)
 
-    print 'paddle     x: ' + str(pad_x_centre) + ',    y: ' + str(pad_y_centre)
+        print 'paddle     x: ' + str(pad_x_centre) + ',    y: ' + str(pad_y_centre)
 
-    print 'ball       x: ' + str(round(ball_x_centre, num_digits)) + \
-          ', y: ' + str(round(ball_y_centre, num_digits))
+        print 'ball       x: ' + str(round(ball_x_centre, num_digits)) + \
+              ', y: ' + str(round(ball_y_centre, num_digits))
 
-    print 'normalized x: ' + str(round(ball_x_centre/table_x, num_digits)) + \
-          ',   y: ' + str(round(ball_y_centre/table_y, num_digits))
+        print 'normalized x: ' + str(round(ball_x_centre/table_x, num_digits)) + \
+              ',   y: ' + str(round(ball_y_centre/table_y, num_digits))
 
-    # distances (centre of paddle to centre of ball)
-    print 'distance   x: ' + str(round(pad_x_centre - ball_x_centre, num_digits)) + \
-          ', y: ' + str(round(pad_y_centre - ball_y_centre, num_digits))
+        # distances (centre of paddle to centre of ball)
+        print 'distance   x: ' + str(round(pad_x_centre - ball_x_centre, num_digits)) + \
+              ', y: ' + str(round(pad_y_centre - ball_y_centre, num_digits))
 
-    # total history
-    for key in history:
-        print key
-        print history[key]
+        # total history
+        for key in history:
+            print key
+            print history[key]
 
-    print '-'
+        print '-'
 
-    # stock AI
-    # checks if middle of the paddle is lower than middle of the ball
-    if pad_y_centre < ball_y_centre:
-        return "down"
+    if stock_ai:
+        # checks if middle of the paddle is lower than middle of the ball
+        if pad_y_centre < ball_y_centre:
+            return "down"
+        else:
+            return "up"
     else:
-        return "up"
+        # custom ai
+        # if ball is moving away, return to middle,
+        # otherwise standard behaviour
+        if history['x_dist'][-1] < history['x_dist'][-2]:  # moving towards us
+            if pad_y_centre < ball_y_centre:
+                return "down"
+            else:
+                return "up"
+        else:
+            if pad_y_centre < table_y/2:
+                return "down"
+            else:
+                return "up"
