@@ -4,7 +4,7 @@ import math
 
 # dictionary representation of game state
 history = dict(paddle_y=[], ball_x=[], ball_y=[], y_dist=[], x_dist=[], d_dist=[],
-               x_vels=[], y_vels=[], scores=[[1, [0, 0], [0, 0]]])
+               x_vels=[], y_vels=[])
 
 score = [1, [0, 0], [0, 0]]  # [round, round_one, round_two]
 goto = -1
@@ -12,6 +12,12 @@ goto = -1
 collision, scored = False, False
 
 def trim_history(hist, trim_size=50):
+    global history
+
+    if trim_size == 0:
+        history = dict(paddle_y=[], ball_x=[], ball_y=[], y_dist=[], x_dist=[],
+                       d_dist=[], x_vels=[], y_vels=[])
+
     if len(hist[hist.keys()[0]]) > trim_size:  # only check one for efficiency
         for key in hist.keys():
             while len(hist[key]) > trim_size:
@@ -58,6 +64,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # Ideas
     # - calculate where the ball will bounce off of the opponent's paddle?
     # - create ball and paddle classes?
+    # - use linear algebra for plotting?
 
     # Issues/TODOs
     # - make sure collisions are using the right coordinates/values
@@ -92,9 +99,6 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     ball_x_centre = ball_x_coord + ball_x_size/2
     ball_y_centre = ball_y_coord + ball_y_size/2
 
-    table_x = table_size[0]
-    table_y = table_size[1]
-
     # figure out which side we're on
     right_side = (pad_x_centre == 420)  # blaze it
 
@@ -105,42 +109,29 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
 
     # calculate collision surfaces, if necessary
 
-    # keep track of score
+    # calculate table info
+    table_x = table_size[0]
+    table_y = table_size[1]
+
     starting_pos = [table_x//2, table_y//2]
-    if [ball_x_centre, ball_y_centre] == starting_pos:
-        scored = False
-
-    # if len(history['ball_x']) is not 0:
-    #     last_ball_x = history['ball_x'][-1]
-    #     last_ball_y = history['ball_y'][-1]
-    #
-    #     if [ball_x_centre, ball_y_centre] == starting_pos:
-    #         print "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOAL at",
-    #         print str(last_ball_x), str(last_ball_y), "score is now",
-    #         if last_ball_x > table_x/2:  # ball was last on the right, so left scored
-    #             score[score[0]][0] += 1
-    #         else:
-    #             score[score[0]][1] += 1
-    #
-    #         if max(score[1]) == score_to_win:
-    #             score[0] = 2  # switch to round 2
-    #
-    #         print score
-
-    # scoring redux
     right_edge = table_x - (2 * pad_x_size)  # 420
     left_edge = 2 * pad_x_size  # 20
 
+    # reset after goal
+    if [ball_x_centre, ball_y_centre] == starting_pos:
+        scored = False
+        goto = -1
+        trim_history(history, 0)
+
+    # track scoring
     if ball_x_centre > right_edge and not scored:
         scored = True
-        goto = -1
         score[score[0]][0] += 1  # changes score of current round's left player
         print "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOAL at",
         print str(ball_x_centre), str(ball_y_centre), "score is now", score
 
     elif ball_x_centre < left_edge and not scored:
         scored = True
-        goto = -1
         score[score[0]][1] += 1  # changes score of current round's right player
         print "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOAL at",
         print str(ball_x_centre), str(ball_y_centre), "score is now", score
@@ -159,8 +150,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     history['y_dist'].append(round(y_dist, num_digits))
     history['d_dist'].append(round(d_dist, num_digits))
 
-    if history['scores'][-1] != score:
-        history['scores'].append(score)  # doesn't quite work
+    # keep score history somehow
 
     trim_history(history, 30)
 
@@ -175,12 +165,20 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     towards_us = (right_side and ball_x_vel > 0 or
                   not right_side and ball_x_vel < 0)
 
-    # post collision, do math magic
+    # post collision, do math magic, TODO: investigate linear algebra
     if collision and not scored:
         x = ball_x_centre
         xv = ball_x_vel
         y = ball_y_centre
         yv = ball_y_vel
+
+        # linear algebra instead? convert so we're in Q4
+        x_2 = x + xv
+        y_2 = y + yv
+        # find eq for (x, y) and (x_2, y_2)
+
+        slope = (-y_2 - -y)/(x_2 - x)
+        print slope
 
         # set how far the ball can go horizontally
         if xv > 0:  # goin' right
@@ -211,30 +209,38 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
             dy_now = max_y - y
             dy_next = dy_now - yv
 
-        # time steps until max distance TODO: might throw NaN, fix hack
-        if xv == 0:
-            max_x_steps = 0
-        else:
+        # time steps until max distance TODO: fix NaN hack
+        try:
             max_x_steps = abs(dx_now/xv)
+        except ZeroDivisionError:
+            max_x_steps = 0
+
         max_y_steps = abs(dy_now/yv)
 
         # INTELLIGENCE
         if max_x_steps < max_y_steps:  # scoring trajectory
             if xv > 0:  # on right goal
                 if right_side:  # watch out
-                    goto = y + max_x_steps * yv
-                    print 'at', goto
+                    goto = y + max_x_steps * yv  # figure out collision y
+                    print 'could score at', goto
+
                 else:
                     pass  # other guy better watch out
 
             else:  # on left goal
                 if not right_side:  # watch out
-                    goto = y + max_x_steps * yv
-                    print 'at', goto
+                    goto = y + max_x_steps * yv  # figure out collision y
+                    print 'could score at', goto
+
                 else:
                     pass  # other guy better watch out
+
         else:  # going to hit the ceiling or floor
-            pass
+            if towards_us:  # calculate further out
+                pass
+
+            else:  # sit back
+                pass
 
         if collision_debug:
             print 'Starting from', x, y, 'going', str(xv), str(yv),
@@ -253,7 +259,6 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
 
         collision = False
 
-
     history['x_vels'].append(ball_x_vel)
     history['y_vels'].append(ball_y_vel)
 
@@ -270,7 +275,14 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
                       ', ' + str(ball_y_centre)
 
     # bounce check for paddles (use paddle coords instead?)
-    if history['x_vels'][-1] > 0 > history['x_vels'][-2] and not (table_x-50 > ball_x_centre > 50):
+    try:
+        last_xv, second_last_xv = history['x_vels'][-1], history['x_vels'][-2]
+    except IndexError:
+        last_xv, second_last_xv = 0, 0
+
+    periphery = not (table_x-50 > ball_x_centre > 50)
+
+    if last_xv > 0 > second_last_xv and periphery:  # direction flipped to -
         collision = True
 
         if collision_debug:
@@ -281,7 +293,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
                 print 'BOUNCED OFF SELF' + ' at ' + str(ball_x_centre) + \
                       ', ' + str(ball_y_centre)
 
-    elif history['x_vels'][-1] < 0 < history['x_vels'][-2] and not (table_x-50 > ball_x_centre > 50):
+    elif last_xv < 0 < second_last_xv and periphery:  # direction flipped to +
         collision = True
 
         if collision_debug:
@@ -347,7 +359,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         else:
             return "up"
     else:
-        # custom AI
+        # CUSTOM AI
         # if ball is moving away, return to middle
         # if ball is on a scoring trajectory, centre paddle there
 
