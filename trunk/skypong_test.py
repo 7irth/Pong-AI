@@ -11,6 +11,8 @@ class TestSkypong(unittest.TestCase):
         pass
 
     def test_ai(self):
+        """Test AI against computer for two rounds, passes if we win both.
+        """
         pygame.init()
         PongAIvAI.init_game()
 
