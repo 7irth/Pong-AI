@@ -118,7 +118,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # print score - left for testing
 
     # rounding
-    num_digits = 2
+    num_digits = 4
 
     # fill up global info arrays to keep track
     history['paddle_y'].append(pad_y_centre)
@@ -132,6 +132,14 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         history['scores'].append(score)  # doesn't quite work
 
     trim_history(history, 30)
+
+    # calculate ball velocity (only two point accuracy)
+    if len(history['ball_x']) > 1:
+        ball_x_vel = -(history['ball_x'][-2] - history['ball_x'][-1])
+        ball_y_vel = -(history['ball_y'][-2] - history['ball_y'][-1])
+    else:
+        ball_x_vel, ball_y_vel = 0, 0  # for the first run
+
 
     if debug:
         """Prints out debug info and metrics, currently:
@@ -189,10 +197,9 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         # otherwise standard behaviour
 
         # runtime debugging
-        print score
+        print str(ball_x_vel) + ', ' + str(ball_y_vel)
 
-        if right_side and history['x_dist'][-1:] < history['x_dist'][-2:-1] or \
-       not right_side and history['x_dist'][-1:] > history['x_dist'][-2:-1]:  # moving towards us
+        if right_side and ball_x_vel > 0 or not right_side and ball_x_vel < 0:  # moving towards us
             if pad_y_centre < ball_y_centre:
                 return "down"
             else:
