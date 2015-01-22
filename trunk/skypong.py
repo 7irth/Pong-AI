@@ -114,7 +114,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
             else:
                 score[score[0]][1] += 1
 
-    if max(score[1]) == 3:
+    if max(score[1]) == 10:
         score[0] = 2  # switch to round 2
 
     print score
