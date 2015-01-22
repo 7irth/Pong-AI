@@ -5,7 +5,8 @@ import math
 # globals to contain game history
 pad_y_vals, ball_x_vals, ball_y_vals = [], [], []
 x_distances, y_distances, d_distances = [], [], []
-score = [0, 0]
+
+score = [1, [0, 0], [0, 0]]  # [round, round_one, round_two]
 
 # dictionary representation of game state
 history = dict(paddle_y=pad_y_vals, ball_x=ball_x_vals, ball_y=ball_y_vals,
@@ -47,7 +48,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
  y   v
     """
 
-    stock_ai = False
+    stock_ai = True
     debug = False
 
     # Ideas
@@ -60,6 +61,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # - figure out how to get the final score for unit testing
     # - determine the optimal history trim size (philosophical quandary notwithstanding)
     # - replace constants with derived variables
+    # - second round start auto gives a point, kinda randomly
 
     # friendlier names, variables
     pad_x_coord = paddle_frect.pos[0]
@@ -106,11 +108,16 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         last_ball_x = history['ball_x'][-1]
 
         if [ball_x_centre, ball_y_centre] == starting_pos:
-            print "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOAL!"
+            # print "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOAL!"
             if last_ball_x > table_x/2:  # ball was last on the right, so left scored
-                score[0] += 1
+                score[score[0]][0] += 1
             else:
-                score[1] += 1
+                score[score[0]][1] += 1
+
+    if max(score[1]) == 3:
+        score[0] = 2  # switch to round 2
+
+    print score
 
     # rounding
     num_digits = 2
@@ -180,7 +187,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         # otherwise standard behaviour
 
         # runtime debugging
-        print score
+        # print score
 
         if right_side and history['x_dist'][-1:] < history['x_dist'][-2:-1] or \
        not right_side and history['x_dist'][-1:] > history['x_dist'][-2:-1]:  # moving towards us

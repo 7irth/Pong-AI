@@ -77,8 +77,8 @@ class Paddle:
 
 
     def move(self, enemy_frect, ball_frect, table_size):
-        #direction = self.move_getter(self.frect.copy(), enemy_frect.copy(), ball_frect.copy(), tuple(table_size))
-        direction = timeout(self.move_getter, (self.frect.copy(), enemy_frect.copy(), ball_frect.copy(), tuple(table_size)), {}, self.timeout)
+        direction = self.move_getter(self.frect.copy(), enemy_frect.copy(), ball_frect.copy(), tuple(table_size))
+        #direction = timeout(self.move_getter, (self.frect.copy(), enemy_frect.copy(), ball_frect.copy(), tuple(table_size)), {}, self.timeout)
         if direction == "up":
             self.frect.move_ip(0, -self.speed)
         elif direction == "down":
@@ -360,9 +360,9 @@ def init_game():
     dust_error = 0.00
     init_speed_mag = 2
     timeout = .10
-    clock_rate = 80
+    clock_rate = 580  # actual: 80
     turn_wait_rate = 3
-    score_to_win = 3
+    score_to_win = 10  # actual: 3
 
 
     screen = pygame.display.set_mode(table_size)
