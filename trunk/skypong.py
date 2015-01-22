@@ -11,7 +11,7 @@ score = [1, [0, 0], [0, 0]]  # [round, round_one, round_two]
 collision, scored = False, False
 
 def trim_history(hist, trim_size=50):
-    if len(hist[hist.keys()[0]]) > trim_size:  # for efficiency
+    if len(hist[hist.keys()[0]]) > trim_size:  # only check one for efficiency
         for key in hist.keys():
             while len(hist[key]) > trim_size:
                 hist[key].pop(0)
@@ -47,7 +47,8 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     """
 
     stock_ai = False
-    debug = False
+    metrics_debug = False
+    collision_debug = False
     score_to_win = 10
     global collision
     global scored
@@ -55,7 +56,6 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # Ideas
     # - calculate where the ball will bounce off of the opponent's paddle?
     # - create ball and paddle classes?
-    # - track ball's velocity to predict where it will go; use game source?
 
     # Issues/TODOs
     # - make sure collisions are using the right coordinates
@@ -63,6 +63,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # - determine the optimal history trim size (philosophical quandary notwithstanding)
     # - replace constants with derived variables
     # - second round start auto gives a point, kinda randomly
+    # - make sure reported values for predictions are correct
 
     # friendlier names, variables
     pad_x_coord = paddle_frect.pos[0]
@@ -125,8 +126,8 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     #         print score
 
     # scoring redux
-    right_edge = table_x - (2 * pad_x_size)
-    left_edge = 2 * pad_x_size
+    right_edge = table_x - (2 * pad_x_size)  # 420
+    left_edge = 2 * pad_x_size  # 20
 
     if ball_x_centre > right_edge and not scored:
         scored = True
@@ -167,7 +168,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         ball_x_vel, ball_y_vel = 0, 0  # for the first run
 
     # post collision, do math magic
-    if collision:
+    if collision and not scored:
         x = ball_x_centre
         xv = ball_x_vel
         y = ball_y_centre
@@ -181,7 +182,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
                 max_x = o_pad_x_coord  # 415
 
             dx_now = max_x - x
-            dx_next = max_x - (x + xv)
+            dx_next = dx_now - xv
 
         else:  # goin' left
             if right_side:
@@ -190,49 +191,53 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
                 max_x = pad_x_coord + pad_x_size  # 25
 
             dx_now = x - max_x
-            dx_next = (x + xv) - max_x
+            dx_next = dx_now + xv
 
         # dx_now = abs(max_x - x)  # how far the ball is from the max x now
         # dx_next = max_x - (x + xv)  # how far it will be after it moves once
 
         if 0 < dx_next < dx_now:  # next step brings it closer to the max
-            max_x_steps = dx_now/xv  # how many steps will it take?
+            max_x_steps = abs(dx_now/xv)  # how many steps will it take?
         else:
             max_x_steps = None  # going away from the max
 
         # set how far the ball can go vertically
         if yv < 0:  # goin' up
+            max_y = 0
             dy_now = y
-            dy_next = y + yv
+            dy_next = dy_now + yv
         else:  # headin' down
             max_y = table_y  # 280
             dy_now = max_y - y
-            dy_next = max_y - (y + yv)
+            dy_next = dy_now - yv
 
         if 0 < dy_next < dy_now:  # next step brings it closer to the max
-            max_y_steps = dy_now/yv  # how many steps will it take?
+            max_y_steps = abs(dy_now/yv)  # how many steps will it take?
         else:
             max_y_steps = None  # going away from the max
 
-        print 'Starting from', x, y, 'going', str(xv), str(yv),
-        print "to a max:", max_x, 0
+        if collision_debug:
+            print 'Starting from', x, y, 'going', str(xv), str(yv),
+            print "to a max:", max_x, max_y
 
-        print max_x_steps, max_y_steps
+            print 'x dx', dx_now, dx_next
+            print 'y dy', dy_now, dy_next
+            print 'x steps', max_x_steps, 'y steps', max_y_steps
 
-        if max_x_steps and max_y_steps:
-            if max_x_steps < max_y_steps:
-                print 'x contact!'
-                print 'y around:', y + max_x_steps * yv
-            else:
-                print 'y contact'
-                print 'x around:', x + max_y_steps * xv
-        elif max_x_steps:
-            print 'x collision in', max_x_steps
-        elif max_y_steps:
-            print 'y collision in', max_y_steps
+            if max_x_steps and max_y_steps:
+                if max_x_steps < max_y_steps:
+                    print 'x contact!'
+                    print 'y around:', y + max_x_steps * yv
+                else:
+                    print 'y contact'
+                    print 'x around:', x + max_y_steps * xv
+            elif max_x_steps:
+                print 'x collision in', max_x_steps
+            elif max_y_steps:
+                print 'y collision in', max_y_steps
 
-        if max_x_steps == max_y_steps is None:
-            print "------------DEBUG ME BRO------------"
+            if max_x_steps == max_y_steps is None:
+                print "------------DEBUG ME BRO------------"
 
         collision = False
 
@@ -243,40 +248,44 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # bounce check for floor/ceiling
     if ball_x_vel == 0 and [ball_x_centre, ball_y_centre] != starting_pos:
         collision = True
-        if ball_y_vel > 0:
-            print 'BOUNCED OFF CEILING' + ' at ' + str(ball_x_centre) + \
-                  ', ' + str(ball_y_centre)
-        else:
-            print 'BOUNCED OFF FLOOR' + ' at ' + str(ball_x_centre) + \
-                  ', ' + str(ball_y_centre)
+        if collision_debug:
+            if ball_y_vel > 0:
+                print 'BOUNCED OFF CEILING' + ' at ' + str(ball_x_centre) + \
+                      ', ' + str(ball_y_centre)
+            else:
+                print 'BOUNCED OFF FLOOR' + ' at ' + str(ball_x_centre) + \
+                      ', ' + str(ball_y_centre)
 
     # bounce check for paddles (use paddle coords instead?)
     if history['x_vels'][-1] > 0 > history['x_vels'][-2] and not (table_x-50 > ball_x_centre > 50):
-        if right_side:
-            collision = True
-            print 'BOUNCED OFF ENEMY' + ' at ' + str(ball_x_centre) + \
-                  ', ' + str(ball_y_centre)
-        else:
-            print 'BOUNCED OFF SELF' + ' at ' + str(ball_x_centre) + \
-                  ', ' + str(ball_y_centre)
+        collision = True
+        if collision_debug:
+            if right_side:
+                print 'BOUNCED OFF ENEMY' + ' at ' + str(ball_x_centre) + \
+                      ', ' + str(ball_y_centre)
+            else:
+                print 'BOUNCED OFF SELF' + ' at ' + str(ball_x_centre) + \
+                      ', ' + str(ball_y_centre)
 
     elif history['x_vels'][-1] < 0 < history['x_vels'][-2] and not (table_x-50 > ball_x_centre > 50):
-        if right_side:
-            print 'BOUNCED OFF SELF' + ' at ' + str(ball_x_centre + ball_x_size) + \
-                  ', ' + str(ball_y_centre)
-        else:
-            collision = True
-            print 'BOUNCED OFF ENEMY' + ' at ' + str(ball_x_centre) + \
-                  ', ' + str(ball_y_centre)
+        collision = True
+        if collision_debug:
+            if right_side:
+                print 'BOUNCED OFF SELF' + ' at ' + str(ball_x_centre) + \
+                      ', ' + str(ball_y_centre)
+            else:
+                print 'BOUNCED OFF ENEMY' + ' at ' + str(ball_x_centre) + \
+                      ', ' + str(ball_y_centre)
 
-    if debug:
+    if metrics_debug:
         """Prints out debug info and metrics, currently:
         table dimensions
         current side
-        paddle (x, y)
-        ball (x, y)
+        paddle location (x, y)
+        ball location (x, y)
         normalized (x, y), basically a position in [0, 1], useful? I dunno
         distance (x, y), from centre of ball to centre of paddle
+        ball velocity (x, y)
         history
         score
         """
@@ -291,9 +300,9 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         else:
             print 'left'
 
-        print 'paddle     x: ' + str(pad_x_centre) + ',    y: ' + str(pad_y_centre)
+        print 'paddle_c   x: ' + str(pad_x_centre) + ',    y: ' + str(pad_y_centre)
 
-        print 'ball       x: ' + str(round(ball_x_centre, num_digits)) + \
+        print 'ball_c     x: ' + str(round(ball_x_centre, num_digits)) + \
               ', y: ' + str(round(ball_y_centre, num_digits))
 
         print 'normalized x: ' + str(round(ball_x_centre/table_x, num_digits)) + \
@@ -302,6 +311,9 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         # distances (centre of paddle to centre of ball)
         print 'distance   x: ' + str(round(x_dist, num_digits)) + \
               ', y: ' + str(round(y_dist, num_digits)) + ', d: ' + str(round(d_dist, num_digits))
+
+        print 'ball_v     x: ' + str(round(ball_x_vel, num_digits)) + \
+              ', y: ' + str(round(ball_y_vel, num_digits))
 
         # total history
         for key in history:
