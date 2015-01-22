@@ -2,15 +2,13 @@ __author__ = 'Tirth'
 
 import math
 
-# globals to contain game history
-pad_y_vals, ball_x_vals, ball_y_vals = [], [], []
-x_distances, y_distances, d_distances = [], [], []
+history = dict(paddle_y=[], ball_x=[], ball_y=[], y_dist=[], x_dist=[], d_dist=[],
+               scores=[[1, [0, 0], [0, 0]]])
 
 score = [1, [0, 0], [0, 0]]  # [round, round_one, round_two]
 
 # dictionary representation of game state
-history = dict(paddle_y=pad_y_vals, ball_x=ball_x_vals, ball_y=ball_y_vals,
-               y_dist=y_distances, x_dist=x_distances, d_dist=d_distances)
+
 
 def trim_history(hist, trim_size=50):
     if len(hist[hist.keys()[0]]) > trim_size:  # for efficiency
@@ -48,7 +46,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
  y   v
     """
 
-    stock_ai = True
+    stock_ai = False
     debug = False
 
     # Ideas
@@ -117,18 +115,21 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     if max(score[1]) == 10:
         score[0] = 2  # switch to round 2
 
-    print score
+    # print score - left for testing
 
     # rounding
     num_digits = 2
 
     # fill up global info arrays to keep track
-    pad_y_vals.append(pad_y_centre)
-    ball_x_vals.append(round(ball_x_centre, num_digits))
-    ball_y_vals.append(round(ball_y_centre, num_digits))
-    x_distances.append(round(x_dist, num_digits))
-    y_distances.append(round(y_dist, num_digits))
-    d_distances.append(round(d_dist, num_digits))
+    history['paddle_y'].append(pad_y_centre)
+    history['ball_x'].append(round(ball_x_centre, num_digits))
+    history['ball_y'].append(round(ball_y_centre, num_digits))
+    history['x_dist'].append(round(x_dist, num_digits))
+    history['y_dist'].append(round(y_dist, num_digits))
+    history['d_dist'].append(round(d_dist, num_digits))
+
+    if history['scores'][-1] != score:
+        history['scores'].append(score)  # doesn't quite work
 
     trim_history(history, 30)
 
@@ -141,6 +142,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         normalized (x, y), basically a position in [0, 1], useful? I dunno
         distance (x, y), from centre of ball to centre of paddle
         history
+        score
         """
 
         # general debug info
@@ -187,7 +189,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         # otherwise standard behaviour
 
         # runtime debugging
-        # print score
+        print score
 
         if right_side and history['x_dist'][-1:] < history['x_dist'][-2:-1] or \
        not right_side and history['x_dist'][-1:] > history['x_dist'][-2:-1]:  # moving towards us
