@@ -3,7 +3,7 @@ __author__ = 'Tirth'
 import math
 
 history = dict(paddle_y=[], ball_x=[], ball_y=[], y_dist=[], x_dist=[], d_dist=[],
-               scores=[[1, [0, 0], [0, 0]]])
+               x_vels=[], y_vels=[], scores=[[1, [0, 0], [0, 0]]])
 
 score = [1, [0, 0], [0, 0]]  # [round, round_one, round_two]
 
@@ -106,7 +106,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         last_ball_x = history['ball_x'][-1]
 
         if [ball_x_centre, ball_y_centre] == starting_pos:
-            # print "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOAL!"
+            print "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOAL!"
             if last_ball_x > table_x/2:  # ball was last on the right, so left scored
                 score[score[0]][0] += 1
             else:
@@ -137,9 +137,32 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     if len(history['ball_x']) > 1:
         ball_x_vel = -(history['ball_x'][-2] - history['ball_x'][-1])
         ball_y_vel = -(history['ball_y'][-2] - history['ball_y'][-1])
+
+        history['x_vels'].append(ball_x_vel)
+        history['y_vels'].append(ball_y_vel)
+
     else:
         ball_x_vel, ball_y_vel = 0, 0  # for the first run
 
+    # bounce check for floor/ceiling
+    if ball_x_vel == 0 and [ball_x_centre, ball_y_centre] != starting_pos:
+        if ball_y_vel > 0:
+            print 'BOUNCED OFF CEILING'
+        else:
+            print 'BOUNCED OFF FLOOR'
+
+    # bounce check for paddles (could use paddle coords?)
+    if len(history['x_vels']) > 1 and not (table_x-50 > ball_x_centre > 50):
+        if history['x_vels'][-1] > 0 > history['x_vels'][-2]:
+            if right_side:
+                print 'BOUNCED OFF ENEMY'
+            else:
+                print 'BOUNCED OFF SELF'
+        elif history['x_vels'][-1] < 0 < history['x_vels'][-2]:
+            if right_side:
+                print 'BOUNCED OFF SELF'
+            else:
+                print 'BOUNCED OFF ENEMY'
 
     if debug:
         """Prints out debug info and metrics, currently:
@@ -192,12 +215,12 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         else:
             return "up"
     else:
-        # custom ai
+        # custom AI
         # if ball is moving away, return to middle,
         # otherwise standard behaviour
 
         # runtime debugging
-        print str(ball_x_vel) + ', ' + str(ball_y_vel)
+        # print str(ball_x_vel) + ', ' + str(ball_y_vel)
 
         if right_side and ball_x_vel > 0 or not right_side and ball_x_vel < 0:  # moving towards us
             if pad_y_centre < ball_y_centre:
