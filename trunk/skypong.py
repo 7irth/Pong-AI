@@ -2,13 +2,13 @@ __author__ = 'Tirth'
 
 import math
 
+# dictionary representation of game state
 history = dict(paddle_y=[], ball_x=[], ball_y=[], y_dist=[], x_dist=[], d_dist=[],
                x_vels=[], y_vels=[], scores=[[1, [0, 0], [0, 0]]])
 
 score = [1, [0, 0], [0, 0]]  # [round, round_one, round_two]
 
-# dictionary representation of game state
-
+collision = False
 
 def trim_history(hist, trim_size=50):
     if len(hist[hist.keys()[0]]) > trim_size:  # for efficiency
@@ -48,6 +48,8 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
 
     stock_ai = False
     debug = False
+    score_to_win = 10
+    global collision
 
     # Ideas
     # - calculate where the ball will bounce off of the opponent's paddle?
@@ -106,21 +108,21 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         last_ball_x = history['ball_x'][-1]
 
         if [ball_x_centre, ball_y_centre] == starting_pos:
-            print "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOAL!"
+            print "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOAL!",
             if last_ball_x > table_x/2:  # ball was last on the right, so left scored
                 score[score[0]][0] += 1
             else:
                 score[score[0]][1] += 1
 
-    if max(score[1]) == 10:
-        score[0] = 2  # switch to round 2
+            if max(score[1]) == score_to_win:
+                score[0] = 2  # switch to round 2
 
-    # print score - left for testing
+            print score
 
     # rounding
     num_digits = 4
 
-    # fill up global info arrays to keep track
+    # fill up global info arrays to keep track (more efficient trim here?)
     history['paddle_y'].append(pad_y_centre)
     history['ball_x'].append(round(ball_x_centre, num_digits))
     history['ball_y'].append(round(ball_y_centre, num_digits))
@@ -137,32 +139,64 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     if len(history['ball_x']) > 1:
         ball_x_vel = -(history['ball_x'][-2] - history['ball_x'][-1])
         ball_y_vel = -(history['ball_y'][-2] - history['ball_y'][-1])
-
-        history['x_vels'].append(ball_x_vel)
-        history['y_vels'].append(ball_y_vel)
-
     else:
         ball_x_vel, ball_y_vel = 0, 0  # for the first run
 
+    # post collision, do math magic
+    if collision:
+        x = ball_x_coord
+        xv = ball_x_vel
+        y = ball_y_coord
+        yv = ball_y_vel
+
+        if right_side:
+            max_x = table_x-pad_x_coord
+        else:
+            max_x = pad_x_coord+pad_x_size
+
+        if yv > 0:
+            max_y = table_y
+        else:
+            max_y = 0
+
+        print str(xv) + ', ' + str(yv)
+
+        collision = False
+
+
+    history['x_vels'].append(ball_x_vel)
+    history['y_vels'].append(ball_y_vel)
+
+    print ball_x_vel,
+    print ", " + str(ball_y_vel)
+
     # bounce check for floor/ceiling
     if ball_x_vel == 0 and [ball_x_centre, ball_y_centre] != starting_pos:
+        collision = True
         if ball_y_vel > 0:
-            print 'BOUNCED OFF CEILING'
+            print 'BOUNCED OFF CEILING' + ' at ' + str(ball_x_coord) + \
+                  ', ' + str(ball_y_coord) + ' now going:',
         else:
-            print 'BOUNCED OFF FLOOR'
+            print 'BOUNCED OFF FLOOR' + ' at ' + str(ball_x_coord) + \
+                  ', ' + str(ball_y_coord) + ' now going:',
 
     # bounce check for paddles (could use paddle coords?)
-    if len(history['x_vels']) > 1 and not (table_x-50 > ball_x_centre > 50):
-        if history['x_vels'][-1] > 0 > history['x_vels'][-2]:
-            if right_side:
-                print 'BOUNCED OFF ENEMY'
-            else:
-                print 'BOUNCED OFF SELF'
-        elif history['x_vels'][-1] < 0 < history['x_vels'][-2]:
-            if right_side:
-                print 'BOUNCED OFF SELF'
-            else:
-                print 'BOUNCED OFF ENEMY'
+    if history['x_vels'][-1] > 0 > history['x_vels'][-2] and not (table_x-50 > ball_x_centre > 50):
+        collision = True
+        if right_side:
+            print 'BOUNCED OFF ENEMY' + ' at ' + str(ball_x_coord) + \
+                  ', ' + str(ball_y_coord) + ' now going:',
+        else:
+            print 'BOUNCED OFF SELF' + ' at ' + str(ball_x_coord) + \
+                  ', ' + str(ball_y_coord) + ' now going:',
+    elif history['x_vels'][-1] < 0 < history['x_vels'][-2] and not (table_x-50 > ball_x_centre > 50):
+        collision = True
+        if right_side:
+            print 'BOUNCED OFF SELF' + ' at ' + str(ball_x_coord) + \
+                  ', ' + str(ball_y_coord) + ' now going:',
+        else:
+            print 'BOUNCED OFF ENEMY' + ' at ' + str(ball_x_coord) + \
+                  ', ' + str(ball_y_coord) + ' now going:',
 
     if debug:
         """Prints out debug info and metrics, currently:
