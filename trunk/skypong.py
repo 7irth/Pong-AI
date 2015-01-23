@@ -1,6 +1,7 @@
 __author__ = 'Tirth'
 
 import math
+import numpy
 
 # dictionary representation of game state
 history = dict(paddle_y=[], ball_x=[], ball_y=[], y_dist=[], x_dist=[], d_dist=[],
@@ -11,7 +12,13 @@ goto = -1
 
 collision, scored = False, False
 
+
 def trim_history(hist, trim_size=50):
+    """Cut down history dict to specified trim_size.
+
+    :param hist: history dict containing all moves in a given turn
+    :param trim_size: size to cut dict down to
+    """
     global history
 
     if trim_size == 0:
@@ -23,39 +30,30 @@ def trim_history(hist, trim_size=50):
             while len(hist[key]) > trim_size:
                 hist[key].pop(0)
 
-def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
-    """return "up" or "down", depending on which way the paddle should go to
-    align its centre with the centre of the ball, assuming the ball will
-    not be moving
 
-    Arguments:
-    paddle_frect: a rectangle representing the coordinates of the paddle
+def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
+    """Return "up" or "down", depending on which way the paddle should go.
+
+    :rtype : str
+    :param paddle_frect: a rectangle representing the coordinates of the paddle
                   paddle_frect.pos[0], paddle_frect.pos[1] is the top-left
                   corner of the rectangle.
                   paddle_frect.size[0], paddle_frect.size[1] are the dimensions
                   of the paddle along the x and y axis, respectively
-
-    other_paddle_frect:
-                  a rectangle representing the opponent paddle. It is formatted
-                  in the same way as paddle_frect
-    ball_frect:   a rectangle representing the ball. It is formatted in the
-                  same way as paddle_frect
-    table_size:   table_size[0], table_size[1] are the dimensions of the table,
-                  along the x and the y axis respectively
-
-    The coordinates look as follows:
-
-     0             x
-     |------------->
-     |
-     |
-     |
- y   v
+                  
+    :param other_paddle_frect: a rectangle representing the opponent paddle. 
+                It is formatted in the same way as paddle_frect
+                
+    :param ball_frect: a rectangle representing the ball. It is formatted in 
+                the same way as paddle_frect
+                  
+    :param table_size: table_size[0], table_size[1] are the dimensions of 
+                the table, along the x and the y axis respectively
     """
 
     stock_ai = False
     metrics_debug = False
-    collision_debug = False
+    collision_debug = True
     score_to_win = 10
     global collision
     global scored
@@ -75,36 +73,26 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # - calculate more than a direct hit
 
     # friendlier names, variables
-    pad_x_coord = paddle_frect.pos[0]
-    pad_y_coord = paddle_frect.pos[1]
-    pad_x_size = paddle_frect.size[0]
-    pad_y_size = paddle_frect.size[1]
+    pad_x_coord, pad_y_coord = paddle_frect.pos[0], paddle_frect.pos[1]
+    pad_x_size, pad_y_size = paddle_frect.size[0], paddle_frect.size[1]
 
-    pad_x_centre = pad_x_coord + pad_x_size/2
-    pad_y_centre = pad_y_coord + pad_y_size/2
+    pad_x_centre, pad_y_centre = pad_x_coord + pad_x_size/2, pad_y_coord + pad_y_size/2
 
-    o_pad_x_coord = other_paddle_frect.pos[0]
-    o_pad_y_coord = other_paddle_frect.pos[1]
-    o_pad_x_size = other_paddle_frect.size[0]
-    o_pad_y_size = other_paddle_frect.size[1]
+    o_pad_x_coord, o_pad_y_coord = other_paddle_frect.pos[0], other_paddle_frect.pos[1]
+    o_pad_x_size, o_pad_y_size = other_paddle_frect.size[0], other_paddle_frect.size[1]
 
-    o_pad_x_centre = o_pad_x_coord + o_pad_x_size/2
-    o_pad_y_centre = o_pad_y_coord + o_pad_y_size/2
+    o_pad_x_centre, o_pad_y_centre = o_pad_x_coord + o_pad_x_size/2, o_pad_y_coord + o_pad_y_size/2
 
-    ball_x_coord = ball_frect.pos[0]
-    ball_y_coord = ball_frect.pos[1]
-    ball_x_size = ball_frect.size[0]
-    ball_y_size = ball_frect.size[1]
+    ball_x_coord, ball_y_coord = ball_frect.pos[0], ball_frect.pos[1]
+    ball_x_size, ball_y_size = ball_frect.size[0], ball_frect.size[1]
 
-    ball_x_centre = ball_x_coord + ball_x_size/2
-    ball_y_centre = ball_y_coord + ball_y_size/2
+    ball_x_centre, ball_y_centre = ball_x_coord + ball_x_size/2, ball_y_coord + ball_y_size/2
 
     # figure out which side we're on
     right_side = (pad_x_centre == 420)  # blaze it
 
     # calculate distances
-    x_dist = pad_x_centre - ball_x_centre
-    y_dist = pad_y_centre - ball_y_centre
+    x_dist, y_dist = pad_x_centre - ball_x_centre, pad_y_centre - ball_y_centre
     d_dist = math.sqrt(x_dist ** 2 + y_dist ** 2)
 
     # calculate collision surfaces, if necessary
@@ -173,12 +161,17 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         yv = ball_y_vel
 
         # linear algebra instead? convert so we're in Q4
+        # vertical collision causes flipped sign slope
         x_2 = x + xv
         y_2 = y + yv
         # find eq for (x, y) and (x_2, y_2)
 
-        slope = (-y_2 - -y)/(x_2 - x)
-        print slope
+        points = [(x, -y), (x_2, -y_2)]
+        x_coords, y_coords = zip(*points)
+        a = numpy.vstack([x_coords, numpy.ones(len(x_coords))]).T
+        m, b = numpy.linalg.lstsq(a, y_coords)[0]
+
+        print "y = {m}x + {b}".format(m=m, b=b)
 
         # set how far the ball can go horizontally
         if xv > 0:  # goin' right
@@ -215,7 +208,10 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         except ZeroDivisionError:
             max_x_steps = 0
 
-        max_y_steps = abs(dy_now/yv)
+        try:
+            max_y_steps = abs(dy_now/yv)
+        except ZeroDivisionError:
+            max_y_steps = 0
 
         # INTELLIGENCE
         if max_x_steps < max_y_steps:  # scoring trajectory
@@ -237,7 +233,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
 
         else:  # going to hit the ceiling or floor
             if towards_us:  # calculate further out
-                pass
+                print 'math take the wheel'  # algebra
 
             else:  # sit back
                 pass
