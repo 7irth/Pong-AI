@@ -53,7 +53,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
 
     stock_ai = False
     metrics_debug = False
-    collision_debug = True
+    collision_debug = False
     score_to_win = 10
     global collision
     global scored
@@ -160,18 +160,53 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         y = ball_y_centre
         yv = ball_y_vel
 
-        # linear algebra instead? convert so we're in Q4
-        # vertical collision causes flipped sign slope
+        # linear algebra
         x_2 = x + xv
         y_2 = y + yv
-        # find eq for (x, y) and (x_2, y_2)
 
+        # negate y so we're in Q4
         points = [(x, -y), (x_2, -y_2)]
         x_coords, y_coords = zip(*points)
         a = numpy.vstack([x_coords, numpy.ones(len(x_coords))]).T
         m, b = numpy.linalg.lstsq(a, y_coords)[0]
 
-        print "y = {m}x + {b}".format(m=m, b=b)
+        # print "y = {m}x + {b}".format(m=m, b=b)
+
+        if xv > 0:  # to the right, to the right
+
+            y_col = ((m * 415) + b)  # where on the scoring line it will hit
+
+            if 0 > y_col > -280:  # it'll be a goal
+                print 'ycol right', y_col
+            elif y_col >= 0:
+                x_col = -b / m
+                print 'xcol ceiling', x_col
+            else:
+                x_col = (-280 - b) / m
+                print 'xcol floor', x_col
+
+            if yv < 0:  # up, up, and away
+                pass
+            else:  # down, down, down, in the burning ring of fire
+                pass
+
+        else:  # to the left, to the left
+
+            y_col = ((m * 25) + b)
+
+            if 0 > y_col > -280:
+                print 'ycol left', y_col
+            elif y_col >= 0:
+                x_col = -b / m
+                print 'xcol ceiling', x_col
+            else:
+                x_col = (-280 - b) / m
+                print 'xcol floor', x_col
+
+            if yv < 0:  # up, up, and away
+                pass
+            else:  # down, down, down, in the burning ring of fire
+                pass
 
         # set how far the ball can go horizontally
         if xv > 0:  # goin' right
@@ -218,7 +253,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
             if xv > 0:  # on right goal
                 if right_side:  # watch out
                     goto = y + max_x_steps * yv  # figure out collision y
-                    print 'could score at', goto
+                    # print 'could score at', goto
 
                 else:
                     pass  # other guy better watch out
@@ -226,7 +261,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
             else:  # on left goal
                 if not right_side:  # watch out
                     goto = y + max_x_steps * yv  # figure out collision y
-                    print 'could score at', goto
+                    # print 'could score at', goto
 
                 else:
                     pass  # other guy better watch out
@@ -239,12 +274,12 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
                 pass
 
         if collision_debug:
-            print 'Starting from', x, y, 'going', str(xv), str(yv),
-            print "to a max:", max_x, max_y
+            print 'Starting from', x, y, 'going', str(xv), str(yv)
+            # print "to a max:", max_x, max_y
 
-            print 'x dx', dx_now, dx_next
-            print 'y dy', dy_now, dy_next
-            print 'x steps', max_x_steps, 'y steps', max_y_steps
+            # print 'x dx', dx_now, dx_next
+            # print 'y dy', dy_now, dy_next
+            # print 'x steps', max_x_steps, 'y steps', max_y_steps
 
             if max_x_steps < max_y_steps:
                 print 'x contact!'
