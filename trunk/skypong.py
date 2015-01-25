@@ -178,10 +178,11 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
 
     # post collision, do math magic - integrate right after collision somehow?
     if collision and not scored and not calculated:
-        set_goto(ball_x_centre, ball_x_vel, ball_y_centre, ball_y_vel, table_y, ball_d, right_edge, left_edge, on_the_right)
+        set_goto(table_y, ball_d, right_edge, left_edge, on_the_right)
 
     # check for bouncing (bow chicka wow woooow)
-    bouncy(table_x, ball_x_centre, ball_y_centre, starting_pos, on_the_right, collision_debug)
+    if not scored:
+        bouncy(table_x, ball_x_centre, ball_y_centre, on_the_right, collision_debug)
 
     if metrics_debug:
         """Prints out debug info and metrics, currently:
@@ -251,7 +252,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
             else:
                 return "up"
         elif towards_us:
-            # print 'LOL I DUNNO'
+            print 'LOL I DUNNO'
             if pad_y_centre < ball_y_centre:
                 return "down"
             else:
@@ -263,13 +264,12 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
                 return "up"
 
 
-def bouncy(table_x, ball_x_centre, ball_y_centre, starting_pos, on_the_right, collision_debug):
+def bouncy(table_x, ball_x_centre, ball_y_centre, on_the_right, collision_debug):
     """Determine where and when collisions occur.
 
     :param table_x: horizontal table width
     :param ball_x_centre: self explanatory
     :param ball_y_centre: self explanatory
-    :param starting_pos: exact centre of table
     :param on_the_right: are we on the right side this round?
     :param collision_debug: flag to print debug collision locations
     """
@@ -285,14 +285,14 @@ def bouncy(table_x, ball_x_centre, ball_y_centre, starting_pos, on_the_right, co
     periphery = not (table_x-50 > ball_x_centre > 50)
 
     # ceiling
-    if last_yv > 0 > second_last_yv:
+    if last_yv > 0 > second_last_yv and last_xv == 0:
         collision = True
 
         if collision_debug:
             print 'BOUNCED OFF CEILING at ({x}, {y}), going ({xv}, {yv})'.format(x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
 
     # floor
-    if last_yv < 0 < second_last_yv:
+    if last_yv < 0 < second_last_yv and last_xv == 0:
         collision = True
 
         if collision_debug:
@@ -320,13 +320,9 @@ def bouncy(table_x, ball_x_centre, ball_y_centre, starting_pos, on_the_right, co
                 print 'BOUNCED OFF ENEMY at ({x}, {y}), going ({xv}, {yv})'.format(x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
 
 
-def set_goto(x, xv, y, yv, table_y, ball_d, right_edge, left_edge, on_the_right):
+def set_goto(table_y, ball_d, right_edge, left_edge, on_the_right):
     """Determine where the paddle should go in response to a collision.
 
-    :param x: ball x coordinate
-    :param xv: ball x velocity
-    :param y: ball y coordinate
-    :param yv: ball y velocity
     :param table_y: table vertical height
     :param ball_d: diameter of ball
     :param right_edge: as far as the ball can go to the right
@@ -335,10 +331,15 @@ def set_goto(x, xv, y, yv, table_y, ball_d, right_edge, left_edge, on_the_right)
     """
     global goto, calculated, collision
 
+    x = history['ball_x'][-1]
+    xv = history['x_vels'][-1]
+    y = history['ball_y'][-1]
+    yv = history['y_vels'][-1]
+
     print '----'
     print 'STARTING MAGIC'
 
-    # TODO: fix when xv is 0
+    # TODO: fix when xv is 0, weird starting coords
     # next coords
     x_2 = x + xv
     y_2 = y + yv
