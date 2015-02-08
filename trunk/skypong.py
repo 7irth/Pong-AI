@@ -5,7 +5,7 @@ import numpy
 
 # dictionary representation of game state
 history = dict(paddle_y=[], ball_x=[], ball_y=[], y_dist=[], x_dist=[], d_dist=[],
-               x_vels=[], y_vels=[])
+               o_d_dist=[], x_vels=[], y_vels=[])
 
 score = [1, [0, 0], [0, 0]]  # [round, round_one, round_two]
 goto = -1
@@ -14,8 +14,8 @@ collision, scored, calculated = False, False, False
 
 # debug flags
 metrics_debug = False
-collision_debug = True
-math_debug = True
+collision_debug = False
+math_debug = False
 
 
 def trim_history(hist, trim_size=50):
@@ -28,7 +28,7 @@ def trim_history(hist, trim_size=50):
 
     if trim_size == 0:
         history = dict(paddle_y=[], ball_x=[], ball_y=[], y_dist=[], x_dist=[],
-                       d_dist=[], x_vels=[], y_vels=[])
+                       d_dist=[], o_d_dist=[], x_vels=[], y_vels=[])
 
     if len(hist[hist.keys()[0]]) > trim_size:  # only check one for efficiency
         for key in hist.keys():
@@ -104,6 +104,9 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     x_dist, y_dist = pad_x_centre - ball_x_centre, pad_y_centre - ball_y_centre
     d_dist = math.sqrt(x_dist ** 2 + y_dist ** 2)
 
+    o_x_dist, o_y_dist = o_pad_x_centre - ball_x_centre, o_pad_y_centre - ball_y_centre
+    o_d_dist = math.sqrt(o_x_dist ** 2 + o_y_dist ** 2)
+
     # calculate collision surfaces, if necessary
 
     # calculate table info
@@ -125,6 +128,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     history['x_dist'].append(round(x_dist, num_digits))
     history['y_dist'].append(round(y_dist, num_digits))
     history['d_dist'].append(round(d_dist, num_digits))
+    history['o_d_dist'].append(round(o_d_dist, num_digits))
 
     # keep score history somehow
 
@@ -245,7 +249,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         # runtime debugging
         # print 'ball: {x}, {y}'.format(x=ball_x_centre, y=ball_y_centre)
         # if not towards_us:
-        #     enemy_tingz(0, o_pad_y_centre, o_pad_y_size)
+        #     print history['x_vels'][-1]
 
         if towards_us and goto != -1:
             if pad_y_centre < goto:
@@ -259,7 +263,8 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
             else:
                 return "up"
         else:
-            if pad_y_centre < table_y/2:
+            # if pad_y_centre < table_y/2:
+            if pad_y_centre < ball_y_centre:
                 return "down"
             else:
                 return "up"
@@ -338,7 +343,7 @@ def set_goto(table_y, ball_d, right_edge, left_edge, op_y, op_s, on_the_right):
     y = history['ball_y'][-1]
     yv = history['y_vels'][-1]
 
-    # TODO: look into weird starting coords
+    # TODO: look into weird starting coords (like xv being 0)
     # next coords
     x_2 = x + xv
     y_2 = y + yv
@@ -370,6 +375,9 @@ def set_goto(table_y, ball_d, right_edge, left_edge, op_y, op_s, on_the_right):
             enemy_tingz(y_col, op_y, op_s)
             # print 'enemy should go to', y_col
 
+        # offset for more random bounces
+        goto += 20
+
         calculated = True
 
     else:  # to the left, to the left
@@ -384,6 +392,9 @@ def set_goto(table_y, ball_d, right_edge, left_edge, op_y, op_s, on_the_right):
             # if so, where will it bounce?
             enemy_tingz(y_col, op_y, op_s)
             # print 'enemy should go to', y_col
+
+        # offset for more random bounces
+        goto += 20
 
         calculated = True
 
@@ -443,3 +454,10 @@ def get_new_y_col(table_y, ball_d, b, m, side_col, iters=20):
 def enemy_tingz(y_col, op_y, op_s):
     print 'centered at: {c} - total surface, {a} to {b}'.format(c=op_y, a=op_y-op_s/2, b=op_y+op_s/2)
     print 'ball going to', y_col
+    time = -(history['ball_x'][-1] - op_y)/history['x_vels'][-1]
+    print 'have to move',
+
+    if y_col > op_y+op_s/2:
+        print y_col - op_y+op_s/2
+    elif y_col < op_y-op_s/2:
+        print y_col - op_y-op_s/2
