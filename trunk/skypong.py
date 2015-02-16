@@ -152,7 +152,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         scored, calculated, collision = False, False, False
         goto = -1
 
-    # not sure if necessary, use collision detection for initial ball
+    # use collision detection for initial ball
     try:
         if (history['ball_x'][-3], history['ball_y'][-3]) == starting_pos:
             collision = True
@@ -243,7 +243,7 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
             return "up"
     else:
         # CUSTOM AI
-        # if ball is moving away, return to middle
+        # if ball is moving away, follow ball
         # if ball is on a scoring trajectory, centre paddle there
 
         # runtime debugging
@@ -454,7 +454,7 @@ def get_new_y_col(table_y, ball_d, b, m, side_col, iters=20):
 def enemy_tingz(y_col, op_y, op_s):
     print 'centered at: {c} - total surface, {a} to {b}'.format(c=op_y, a=op_y-op_s/2, b=op_y+op_s/2)
     print 'ball going to', y_col
-    time = -(history['ball_x'][-1] - op_y)/history['x_vels'][-1]
+    # time = -(history['ball_x'][-1] - op_y)/history['x_vels'][-1]
     print 'have to move',
 
     if y_col > op_y+op_s/2:
