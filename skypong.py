@@ -4,8 +4,8 @@ import math
 import numpy
 
 # dictionary representation of game state
-history = dict(paddle_y=[], ball_x=[], ball_y=[], y_dist=[], x_dist=[], d_dist=[],
-               o_d_dist=[], x_vels=[], y_vels=[])
+history = dict(paddle_y=[], ball_x=[], ball_y=[], y_dist=[], x_dist=[],
+               d_dist=[], o_d_dist=[], x_vels=[], y_vels=[])
 
 score = [1, [0, 0], [0, 0]]  # [round, round_one, round_two]
 goto = -1
@@ -69,7 +69,8 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # Issues/TODOs
     # - make sure collisions are using the right coordinates/values
     # - figure out how to get the final score for unit testing
-    # - determine the optimal history trim size (philosophical quandary notwithstanding)
+    # - determine the optimal history trim size (philosophical quandary
+    #   notwithstanding)
     # - replace constants with derived variables
     # - second round start auto gives a point, kinda randomly
     # - taunts, fancy returns
@@ -84,18 +85,23 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     pad_x_coord, pad_y_coord = paddle_frect.pos[0], paddle_frect.pos[1]
     pad_x_size, pad_y_size = paddle_frect.size[0], paddle_frect.size[1]
 
-    pad_x_centre, pad_y_centre = pad_x_coord + pad_x_size/2, pad_y_coord + pad_y_size/2
+    pad_x_centre, pad_y_centre = pad_x_coord + pad_x_size / 2, pad_y_coord +\
+                                 pad_y_size / 2
 
-    o_pad_x_coord, o_pad_y_coord = other_paddle_frect.pos[0], other_paddle_frect.pos[1]
-    o_pad_x_size, o_pad_y_size = other_paddle_frect.size[0], other_paddle_frect.size[1]
+    o_pad_x_coord, o_pad_y_coord = other_paddle_frect.pos[0], \
+                                   other_paddle_frect.pos[1]
+    o_pad_x_size, o_pad_y_size = other_paddle_frect.size[0], \
+                                 other_paddle_frect.size[1]
 
-    o_pad_x_centre, o_pad_y_centre = o_pad_x_coord + o_pad_x_size/2, o_pad_y_coord + o_pad_y_size/2
+    o_pad_x_centre, o_pad_y_centre = o_pad_x_coord + o_pad_x_size / 2, \
+                                     o_pad_y_coord + o_pad_y_size / 2
 
     ball_x_coord, ball_y_coord = ball_frect.pos[0], ball_frect.pos[1]
     ball_x_size, ball_y_size = ball_frect.size[0], ball_frect.size[1]
 
-    ball_x_centre, ball_y_centre = ball_x_coord + ball_x_size/2, ball_y_coord + ball_y_size/2
-    ball_d = float(ball_x_size)/2
+    ball_x_centre, ball_y_centre = ball_x_coord + ball_x_size / 2, \
+                                   ball_y_coord + ball_y_size / 2
+    ball_d = float(ball_x_size) / 2
 
     # figure out which side we're on
     on_the_right = pad_x_centre == 420  # blaze it
@@ -104,7 +110,8 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     x_dist, y_dist = pad_x_centre - ball_x_centre, pad_y_centre - ball_y_centre
     d_dist = math.sqrt(x_dist ** 2 + y_dist ** 2)
 
-    o_x_dist, o_y_dist = o_pad_x_centre - ball_x_centre, o_pad_y_centre - ball_y_centre
+    o_x_dist, o_y_dist = o_pad_x_centre - ball_x_centre, o_pad_y_centre - \
+                         ball_y_centre
     o_d_dist = math.sqrt(o_x_dist ** 2 + o_y_dist ** 2)
 
     # calculate collision surfaces, if necessary
@@ -112,9 +119,10 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     # calculate table info
     table_x = table_size[0]
     table_y = table_size[1]
-    gutter = ball_x_size  # not really related, might have to figure out a better way
+    gutter = ball_x_size  # not really related, might have to figure out a
+    # better way
 
-    starting_pos = (table_x//2, table_y//2)
+    starting_pos = (table_x // 2, table_y // 2)
     right_edge = table_x - gutter - pad_x_size - ball_d
     left_edge = gutter + pad_x_size + ball_d
 
@@ -145,10 +153,12 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
     history['y_vels'].append(ball_y_vel)
 
     # relative ball movement, relative velocity?
-    towards_us = (on_the_right and ball_x_vel > 0) or (not on_the_right and ball_x_vel < 0)
+    towards_us = (on_the_right and ball_x_vel > 0) or (
+    not on_the_right and ball_x_vel < 0)
 
     # reset after goal
-    if (ball_x_centre, ball_y_centre) == starting_pos and history['ball_x'] != 0:
+    if (ball_x_centre, ball_y_centre) == starting_pos and history[
+        'ball_x'] != 0:
         scored, calculated, collision = False, False, False
         goto = -1
 
@@ -171,7 +181,8 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         print str(ball_x_centre), str(ball_y_centre), "score is now", score
 
     elif ball_x_centre < left_edge - 10 and not scored:  # goal on left
-        score[score[0]][1] += 1  # changes score of current round's right player
+        score[score[0]][
+            1] += 1  # changes score of current round's right player
         scored = True
 
         if not on_the_right:
@@ -185,7 +196,8 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
 
     # post collision, do math magic - integrate right after collision somehow?
     if collision and not scored and not calculated:
-        set_goto(table_y, ball_d, right_edge, left_edge, o_pad_y_centre, o_pad_y_size, on_the_right)
+        set_goto(table_y, ball_d, right_edge, left_edge, o_pad_y_centre,
+                 o_pad_y_size, on_the_right)
 
     # check for bouncing (bow chicka wow woooow)
     if not scored:
@@ -214,16 +226,23 @@ def pong_ai(paddle_frect, other_paddle_frect, ball_frect, table_size):
         else:
             print 'left'
 
-        print 'paddle_c   x: {x}, y: {y}'.format(x=pad_x_centre, y=pad_y_centre)
+        print 'paddle_c   x: {x}, y: {y}'.format(x=pad_x_centre,
+                                                 y=pad_y_centre)
 
-        print 'o_paddle_c x: {x}, y: {y}'.format(x=o_pad_x_centre, y=o_pad_y_centre)
+        print 'o_paddle_c x: {x}, y: {y}'.format(x=o_pad_x_centre,
+                                                 y=o_pad_y_centre)
 
-        print 'ball_c     x: {x}, y: {y}'.format(x=round(ball_x_centre, num_digits), y=round(ball_y_centre, num_digits))
+        print 'ball_c     x: {x}, y: {y}'.format(
+            x=round(ball_x_centre, num_digits),
+            y=round(ball_y_centre, num_digits))
 
         # distances (centre of paddle to centre of ball)
-        print 'distance   x: {x}, y: {y}, d: {d}'.format(x=round(x_dist, num_digits), y=round(y_dist, num_digits), d=round(d_dist, num_digits))
+        print 'distance   x: {x}, y: {y}, d: {d}'.format(
+            x=round(x_dist, num_digits), y=round(y_dist, num_digits),
+            d=round(d_dist, num_digits))
 
-        print 'ball_v     x: {x}, y: {y}'.format(x=round(ball_x_vel, num_digits), y=round(ball_y_vel, num_digits))
+        print 'ball_v     x: {x}, y: {y}'.format(
+            x=round(ball_x_vel, num_digits), y=round(ball_y_vel, num_digits))
 
         # total history
         # for key in history:
@@ -279,7 +298,7 @@ def bouncy(table_x, ball_x_centre, ball_y_centre, on_the_right):
     :param on_the_right: are we on the right side this round?
     """
     global collision, calculated
-    
+
     try:
         last_xv, second_last_xv = history['x_vels'][-1], history['x_vels'][-2]
         last_yv, second_last_yv = history['y_vels'][-1], history['y_vels'][-2]
@@ -287,21 +306,24 @@ def bouncy(table_x, ball_x_centre, ball_y_centre, on_the_right):
         last_xv, second_last_xv = 0, 0
         last_yv, second_last_yv = 0, 0
 
-    periphery = not (table_x-50 > ball_x_centre > 50)
+    periphery = not (table_x - 50 > ball_x_centre > 50)
 
     # ceiling
     if last_yv > 0 > second_last_yv and last_xv == 0:
         collision = True
 
         if collision_debug:
-            print 'BOUNCED OFF CEILING at ({x}, {y}), going ({xv}, {yv})'.format(x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
+            print 'BOUNCED OFF CEILING at ({x}, {y}), going ({xv}, ' \
+                  '{yv})'.format(
+                x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
 
     # floor
     if last_yv < 0 < second_last_yv and last_xv == 0:
         collision = True
 
         if collision_debug:
-            print 'BOUNCED OFF FLOOR at ({x}, {y}), going ({xv}, {yv})'.format(x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
+            print 'BOUNCED OFF FLOOR at ({x}, {y}), going ({xv}, {yv})'.format(
+                x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
 
     # paddles (use paddle coords instead?)
     if last_xv > 0 > second_last_xv and periphery:  # hit left side
@@ -311,9 +333,13 @@ def bouncy(table_x, ball_x_centre, ball_y_centre, on_the_right):
 
         if collision_debug:
             if on_the_right:
-                print 'BOUNCED OFF ENEMY at ({x}, {y}), going ({xv}, {yv})'.format(x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
+                print 'BOUNCED OFF ENEMY at ({x}, {y}), going ({xv}, ' \
+                      '{yv})'.format(
+                    x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
             else:
-                print 'BOUNCED OFF SELF at ({x}, {y}), going ({xv}, {yv})'.format(x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
+                print 'BOUNCED OFF SELF at ({x}, {y}), going ({xv}, ' \
+                      '{yv})'.format(
+                    x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
 
     elif last_xv < 0 < second_last_xv and periphery:  # hit right side
         collision = True
@@ -322,9 +348,13 @@ def bouncy(table_x, ball_x_centre, ball_y_centre, on_the_right):
 
         if collision_debug:
             if on_the_right:
-                print 'BOUNCED OFF SELF at ({x}, {y}), going ({xv}, {yv})'.format(x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
+                print 'BOUNCED OFF SELF at ({x}, {y}), going ({xv}, ' \
+                      '{yv})'.format(
+                    x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
             else:
-                print 'BOUNCED OFF ENEMY at ({x}, {y}), going ({xv}, {yv})'.format(x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
+                print 'BOUNCED OFF ENEMY at ({x}, {y}), going ({xv}, ' \
+                      '{yv})'.format(
+                    x=ball_x_centre, y=ball_y_centre, xv=last_xv, yv=last_yv)
 
 
 def set_goto(table_y, ball_d, right_edge, left_edge, op_y, op_s, on_the_right):
@@ -359,7 +389,9 @@ def set_goto(table_y, ball_d, right_edge, left_edge, op_y, op_s, on_the_right):
     if math_debug:
         print '----'
         print 'STARTING MAGIC'
-        print 'Using coords ({x}, {y}) and ({x2}, {y2}) for math'.format(x=x, y=y, x2=x_2, y2=y_2)
+        print 'Using coords ({x}, {y}) and ({x2}, {y2}) for math' \
+            .format(x=x, y=y, x2=x_2, y2=y_2)
+
         print "y = {m}x + {b}".format(m=m, b=b)
 
     if xv > 0:  # to the right, to the right
@@ -375,11 +407,6 @@ def set_goto(table_y, ball_d, right_edge, left_edge, op_y, op_s, on_the_right):
             enemy_tingz(y_col, op_y, op_s)
             # print 'enemy should go to', y_col
 
-        # offset for more random bounces
-        goto += 20
-
-        calculated = True
-
     else:  # to the left, to the left
         y_col = get_new_y_col(table_y, ball_d, b, m, left_edge)
 
@@ -393,16 +420,15 @@ def set_goto(table_y, ball_d, right_edge, left_edge, op_y, op_s, on_the_right):
             enemy_tingz(y_col, op_y, op_s)
             # print 'enemy should go to', y_col
 
-        # offset for more random bounces
-        goto += 20
-
-        calculated = True
-
+    # offset for more random bounces
+    goto += numpy.random.randint(-19, 19)
+    calculated = True
     collision = False
 
 
 def get_new_y_col(table_y, ball_d, b, m, side_col, iters=20):
-    """Do algebra to figure out where and when the ball will bounce iters times.
+    """Do algebra to figure out where and when the ball will bounce iters
+    times.
 
     :rtype : float
     :param table_y: table vertical height
@@ -413,15 +439,17 @@ def get_new_y_col(table_y, ball_d, b, m, side_col, iters=20):
     :param iters: number of predictions to make
     :return: y coordinate corresponding to a goal
     """
-    y_col = ((m * side_col) + b)  # where on the scoring line it will hit, TODO: confirm centre
+    y_col = ((m * side_col) + b)  # where on the scoring line it will hit,
+             # TODO: confirm centre
 
-    # while not -ball_d > y_col > -(table_y-ball_d):  # figured out a score line intercept on the table
+    # while not -ball_d > y_col > -(table_y-ball_d):  # figured out a score
+    # line intercept on the table
     for i in range(iters):
         if math_debug:
-            print ''
+            print 'test'
             print "score line intercept: ", y_col
 
-        if -ball_d > y_col > -(table_y-ball_d):
+        if -ball_d > y_col > -(table_y - ball_d):
             if math_debug:
                 print 'GOT IT'
             break
@@ -437,11 +465,11 @@ def get_new_y_col(table_y, ball_d, b, m, side_col, iters=20):
             if math_debug:
                 print 'will hit ceiling at', x_col
         else:
-            x_col = (-(table_y-ball_d) - b) / m  # hit floor here
+            x_col = (-(table_y - ball_d) - b) / m  # hit floor here
 
             # after (x_col, ~280) bounce, what's next?
             m = -m
-            b = -(table_y-ball_d) - (m * x_col)
+            b = -(table_y - ball_d) - (m * x_col)
             y_col = ((m * side_col) + b)
             if math_debug:
                 print 'will hit floor at', x_col
@@ -452,12 +480,14 @@ def get_new_y_col(table_y, ball_d, b, m, side_col, iters=20):
 
 
 def enemy_tingz(y_col, op_y, op_s):
-    print 'centered at: {c} - total surface, {a} to {b}'.format(c=op_y, a=op_y-op_s/2, b=op_y+op_s/2)
+    print 'centered at: {c} - total surface, {a} to {b}'.format(c=op_y,
+                                                                a=op_y - op_s / 2,
+                                                                b=op_y + op_s / 2)
     print 'ball going to', y_col
     # time = -(history['ball_x'][-1] - op_y)/history['x_vels'][-1]
     print 'have to move',
 
-    if y_col > op_y+op_s/2:
-        print y_col - op_y+op_s/2
-    elif y_col < op_y-op_s/2:
-        print y_col - op_y-op_s/2
+    if y_col > op_y + op_s / 2:
+        print y_col - op_y + op_s / 2
+    elif y_col < op_y - op_s / 2:
+        print y_col - op_y - op_s / 2
